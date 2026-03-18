@@ -99,7 +99,7 @@ export function SavedStoriesPage() {
             <button
               key={c.id}
               type="button"
-              onClick={() => navigate(`/story/${c.id}`)}
+              onClick={() => { if (renamingId !== c.id) navigate(`/story/${c.id}`) }}
               className="overflow-hidden rounded-2xl bg-white/5 text-left ring-1 ring-white/10 hover:bg-white/10"
             >
               <div className="aspect-[4/3] w-full bg-black/20">
@@ -133,6 +133,7 @@ export function SavedStoriesPage() {
                       <div className="font-semibold">{c.title}</div>
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={(e) => startRename(c.id, c.title, e)}
                         className="text-cream/40 hover:text-cream/80"
                         title="Rename"
