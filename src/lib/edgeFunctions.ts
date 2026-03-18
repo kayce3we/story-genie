@@ -9,7 +9,7 @@ export async function callEdgeFunction<TResponse>(
   name: EdgeFunctionName,
   body: unknown,
 ): Promise<TResponse> {
-  const { data, error } = await supabase.functions.invoke<TResponse>(name, { body })
+  const { data, error } = await supabase.functions.invoke<TResponse>(name, { body: body as Record<string, unknown> })
 
   if (error) {
     // Try to extract the actual error body from the response
