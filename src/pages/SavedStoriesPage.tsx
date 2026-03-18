@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { loadSavedStories } from '../lib/db'
+import { loadSavedStories, renameStory } from '../lib/db'
 import { THEMES, type ThemeKey } from '../types/story'
 
 type StoryCard = {
@@ -17,6 +17,9 @@ export function SavedStoriesPage() {
   const navigate = useNavigate()
   const [cards, setCards] = useState<StoryCard[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const renameInputRef = useRef<HTMLInputElement>(null)
 
   // This effect loads saved stories and their cover images (page 1).
   useEffect(() => {
@@ -58,6 +61,22 @@ export function SavedStoriesPage() {
     return THEMES.find((t) => t.key === theme)?.emoji ?? '✨'
   }
 
+  function startRename(id: string, currentTitle: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    setRenamingId(id)
+    setRenameValue(currentTitle)
+    setTimeout(() => renameInputRef.current?.focus(), 0)
+  }
+
+  async function submitRename(id: string) {
+    const trimmed = renameValue.trim()
+    if (trimmed && trimmed !== cards.find((c) => c.id === id)?.title) {
+      await renameStory(id, trimmed)
+      setCards((prev) => prev.map((c) => (c.id === id ? { ...c, title: trimmed } : c)))
+    }
+    setRenamingId(null)
+  }
+
   return (
     <div className="min-h-screen bg-navy text-cream">
       <div className="mx-auto max-w-5xl px-6 py-14">
@@ -96,7 +115,32 @@ export function SavedStoriesPage() {
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="font-semibold">{c.title}</div>
+                  {renamingId === c.id ? (
+                    <input
+                      ref={renameInputRef}
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={() => submitRename(c.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitRename(c.id)
+                        if (e.key === 'Escape') setRenamingId(null)
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 rounded-lg bg-white/10 px-2 py-1 text-sm font-semibold text-cream outline-none ring-1 ring-gold/60"
+                    />
+                  ) : (
+                    <div className="flex flex-1 items-center gap-2">
+                      <div className="font-semibold">{c.title}</div>
+                      <button
+                        type="button"
+                        onClick={(e) => startRename(c.id, c.title, e)}
+                        className="text-cream/40 hover:text-cream/80"
+                        title="Rename"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                  )}
                   <div className="text-lg">{themeEmoji(c.theme)}</div>
                 </div>
                 <div className="mt-1 text-sm text-cream/70">

@@ -1,5 +1,7 @@
 export type StoryLength = 'Short' | 'Medium' | 'Long'
 
+export type StoryLanguage = 'English' | 'Chinese'
+
 export type ThemeKey =
   | 'Magical'
   | 'Animals'

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { THEMES, type StoryLength, type ThemeKey } from '../types/story'
+import { THEMES, type StoryLanguage, type StoryLength, type ThemeKey } from '../types/story'
 
 type StoryInputState = {
   childName: string
@@ -8,6 +8,7 @@ type StoryInputState = {
   events: string
   theme: ThemeKey
   length: StoryLength
+  language: StoryLanguage
   photoFile: File | null
 }
 
@@ -20,6 +21,7 @@ export function StoryInputPage() {
   const [events, setEvents] = useState('')
   const [theme, setTheme] = useState<ThemeKey>('Magical')
   const [length, setLength] = useState<StoryLength>('Medium')
+  const [language, setLanguage] = useState<StoryLanguage>('English')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
 
   const canSubmit = useMemo(() => {
@@ -28,7 +30,7 @@ export function StoryInputPage() {
 
   // This function moves us to the loading screen with the form data.
   function onGrantStory() {
-    const state: StoryInputState = { childName, childAge, events, theme, length, photoFile }
+    const state: StoryInputState = { childName, childAge, events, theme, length, language, photoFile }
     navigate('/loading', { state })
   }
 
@@ -110,6 +112,27 @@ export function StoryInputPage() {
                   ].join(' ')}
                 >
                   {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 text-sm text-cream/80">Story language</div>
+            <div className="flex gap-3">
+              {(['English', 'Chinese'] as StoryLanguage[]).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setLanguage(opt)}
+                  className={[
+                    'flex-1 rounded-xl px-4 py-3 font-semibold ring-1',
+                    language === opt
+                      ? 'bg-gold text-navy ring-gold'
+                      : 'bg-white/5 text-cream ring-white/10 hover:bg-white/10',
+                  ].join(' ')}
+                >
+                  {opt === 'English' ? '🇬🇧 English' : '🇨🇳 Chinese'}
                 </button>
               ))}
             </div>

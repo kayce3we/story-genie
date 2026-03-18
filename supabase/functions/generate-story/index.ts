@@ -8,10 +8,13 @@ type GenerateStoryRequest = {
   events: string
   theme: string
   length: string
+  language: string
 }
 
 // This function builds the Claude prompts exactly once in one place.
 function buildPrompts(input: GenerateStoryRequest) {
+  const isChinese = input.language === 'Chinese'
+
   const system =
     `You are Story Genie, a warm and imaginative children's storyteller. ` +
     `Create personalized bedtime stories that feel magical, safe, and deeply personal to each child. ` +
@@ -19,7 +22,8 @@ function buildPrompts(input: GenerateStoryRequest) {
     `Structure: warm opening → adventure → calm, sleepy resolution. ` +
     `End every story with the child drifting off to sleep feeling happy and safe. ` +
     `Write exactly 5 paragraphs. Separate each paragraph with --- on its own line. ` +
-    `Never include scary, violent, or inappropriate content.`
+    `Never include scary, violent, or inappropriate content. ` +
+    (isChinese ? `Write the entire story in Simplified Chinese.` : `Write the story in English.`)
 
   const user =
     `Create a ${input.theme} bedtime story for ${input.name}, age ${input.age}. ` +

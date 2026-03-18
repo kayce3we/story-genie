@@ -63,6 +63,20 @@ export async function loadStoryPages(storyId: string): Promise<StoryPage[]> {
   }))
 }
 
+// This function renames a story for the current parent.
+export async function renameStory(storyId: string, title: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('You must be logged in.')
+
+  const { error } = await supabase
+    .from('stories')
+    .update({ title })
+    .eq('id', storyId)
+    .eq('parent_id', user.id)
+
+  if (error) throw new Error(error.message)
+}
+
 // This function loads saved stories for the current parent.
 export async function loadSavedStories() {
   const { data: { user } } = await supabase.auth.getUser()

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { callEdgeFunction } from '../lib/edgeFunctions'
 import { createStory, saveStoryPages } from '../lib/db'
-import type { StoryLength, ThemeKey, StoryPage } from '../types/story'
+import type { StoryLanguage, StoryLength, ThemeKey, StoryPage } from '../types/story'
 
 type LoadingState = {
   childName: string
@@ -10,6 +10,7 @@ type LoadingState = {
   events: string
   theme: ThemeKey
   length: StoryLength
+  language: StoryLanguage
   photoFile: File | null
 }
 
@@ -63,6 +64,7 @@ export function LoadingPage() {
           events: i.events,
           theme: i.theme,
           length: i.length,
+          language: i.language ?? 'English',
         })
 
         const paragraphs = splitParagraphs(storyRes.storyText)
