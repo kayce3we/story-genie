@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global app look */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: theme('fontFamily.body');
+  background: theme('colors.navy');
+  color: theme('colors.cream');
+}
+
+/* Make buttons/text selection feel nicer */
+::selection {
+  background: rgba(245, 200, 66, 0.35);
+}
+

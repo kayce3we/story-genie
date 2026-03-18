@@ -1,0 +1,10 @@
+
+
+> I'm getting this error when generating a story:
+
+TypeError: Cannot read properties of undefined (reading 'style')
+    at generateStory (src/services/storyGenerator.ts:42:18)
+    at StorySetup.tsx:87:12
+
+Fix it.
+```
