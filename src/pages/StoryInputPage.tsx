@@ -13,17 +13,31 @@ type StoryInputState = {
   photoFiles: File[]
 }
 
+const STORAGE_KEY = 'story-genie:form'
+
+function loadSaved(): Partial<StoryInputState> {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') } catch { return {} }
+}
+
+function saveDraft(patch: Partial<StoryInputState>) {
+  try {
+    const current = loadSaved()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...patch }))
+  } catch {}
+}
+
 // This screen collects the details needed to generate a story.
 export function StoryInputPage() {
   const navigate = useNavigate()
+  const saved = useMemo(loadSaved, [])
 
-  const [childName, setChildName] = useState('')
-  const [childAge, setChildAge] = useState<number>(6)
-  const [events, setEvents] = useState('')
-  const [theme, setTheme] = useState<ThemeKey>('Magical')
-  const [length, setLength] = useState<StoryLength>('Medium')
-  const [language, setLanguage] = useState<StoryLanguage>('English')
-  const [voice, setVoice] = useState<NarrativeVoice>('Classic')
+  const [childName, setChildName] = useState(saved.childName ?? '')
+  const [childAge, setChildAge] = useState<number>(saved.childAge ?? 6)
+  const [events, setEvents] = useState(saved.events ?? '')
+  const [theme, setTheme] = useState<ThemeKey>(saved.theme ?? 'Magical')
+  const [length, setLength] = useState<StoryLength>(saved.length ?? 'Medium')
+  const [language, setLanguage] = useState<StoryLanguage>(saved.language ?? 'English')
+  const [voice, setVoice] = useState<NarrativeVoice>(saved.voice ?? 'Classic')
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
 
   const canSubmit = useMemo(() => {
@@ -32,12 +46,13 @@ export function StoryInputPage() {
 
   // This function moves us to the loading screen with the form data.
   function onGrantStory() {
+    localStorage.removeItem(STORAGE_KEY)
     const state: StoryInputState = { childName, childAge, events, theme, length, language, voice, photoFiles }
     navigate('/loading', { state })
   }
 
   return (
-    <div className="min-h-screen bg-navy text-cream">
+    <div className="min-h-screen bg-navy pb-20 text-cream">
       <div className="mx-auto max-w-3xl px-6 py-14">
         <h1 className="font-heading text-3xl font-bold">Create a new story</h1>
 
@@ -46,7 +61,7 @@ export function StoryInputPage() {
             <div className="mb-2 text-sm text-cream/80">Child’s name</div>
             <input
               value={childName}
-              onChange={(e) => setChildName(e.target.value)}
+              onChange={(e) => { setChildName(e.target.value); saveDraft({ childName: e.target.value }) }}
               className="w-full rounded-xl bg-white/10 px-4 py-3 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-gold/80"
               placeholder="Ava"
             />
@@ -56,7 +71,7 @@ export function StoryInputPage() {
             <div className="mb-2 text-sm text-cream/80">Child’s age (2–10)</div>
             <input
               value={childAge}
-              onChange={(e) => setChildAge(Number(e.target.value))}
+              onChange={(e) => { setChildAge(Number(e.target.value)); saveDraft({ childAge: Number(e.target.value) }) }}
               type="number"
               min={2}
               max={10}
@@ -68,7 +83,7 @@ export function StoryInputPage() {
             <div className="mb-2 text-sm text-cream/80">Today’s events</div>
             <textarea
               value={events}
-              onChange={(e) => setEvents(e.target.value)}
+              onChange={(e) => { setEvents(e.target.value); saveDraft({ events: e.target.value }) }}
               rows={5}
               className="w-full resize-none rounded-xl bg-white/10 px-4 py-3 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-gold/80"
               placeholder='e.g. "lost a tooth, saw a rainbow, had pizza for dinner"'
@@ -82,7 +97,7 @@ export function StoryInputPage() {
                 <button
                   key={t.key}
                   type="button"
-                  onClick={() => setTheme(t.key)}
+                  onClick={() => { setTheme(t.key); saveDraft({ theme: t.key }) }}
                   className={[
                     'rounded-xl px-3 py-3 text-left ring-1 transition',
                     theme === t.key
@@ -105,7 +120,7 @@ export function StoryInputPage() {
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => setLength(opt)}
+                  onClick={() => { setLength(opt); saveDraft({ length: opt }) }}
                   className={[
                     'flex-1 rounded-xl px-4 py-3 font-semibold ring-1',
                     length === opt
@@ -126,7 +141,7 @@ export function StoryInputPage() {
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => setLanguage(opt)}
+                  onClick={() => { setLanguage(opt); saveDraft({ language: opt }) }}
                   className={[
                     'flex-1 rounded-xl px-4 py-3 font-semibold ring-1',
                     language === opt
@@ -147,7 +162,7 @@ export function StoryInputPage() {
                 <button
                   key={v.key}
                   type="button"
-                  onClick={() => setVoice(v.key)}
+                  onClick={() => { setVoice(v.key); saveDraft({ voice: v.key }) }}
                   className={[
                     'rounded-xl px-3 py-3 text-left ring-1 transition',
                     voice === v.key

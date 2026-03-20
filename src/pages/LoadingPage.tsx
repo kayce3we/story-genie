@@ -132,60 +132,101 @@ export function LoadingPage() {
 
   const percent = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100)
 
+  const steps = [
+    { label: 'Writing your story', done: stage > 1, active: stage === 1 },
+    { label: 'Painting illustrations', done: false, active: stage === 2 },
+    { label: 'Saving to your library', done: false, active: false },
+  ]
+
   return (
     <div className="min-h-screen bg-navy text-cream">
-      <div className="mx-auto max-w-3xl px-6 py-14">
+      <div className="mx-auto max-w-md px-6 py-16">
+
+        {/* Lamp + title */}
         <div className="text-center">
-          <div className="mx-auto text-6xl">🪔</div>
+          <div className="text-7xl animate-bounce">🪔</div>
           <h1 className="mt-6 font-heading text-3xl font-bold">Summoning your story…</h1>
-          <p className="mt-3 text-cream/80">{stageText}</p>
+          <p className="mt-2 text-cream/60 text-sm">{stageText}</p>
         </div>
 
-        <div className="mt-10 rounded-2xl bg-white/5 p-6">
-          <div className="flex items-center justify-between text-sm text-cream/80">
-            <div>
-              Painting illustration {Math.min(doneCount + (stage === 2 ? 1 : 0), totalCount)} of{' '}
-              {totalCount}…
-            </div>
-            <div>{percent}%</div>
-          </div>
-
-          <div className="mt-3 h-3 w-full rounded-full bg-white/10">
+        {/* Step indicators */}
+        <div className="mt-10 flex flex-col gap-3">
+          {steps.map((step, i) => (
             <div
-              className="h-3 rounded-full bg-gold transition-all"
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-
-          {error ? (
-            <div className="mt-5 rounded-xl bg-red-500/20 p-4 text-sm">
-              <div className="font-semibold">Oops — generation failed</div>
-              {error.includes('401') || error.includes('Invalid JWT') ? (
-                <>
-                  <div className="mt-1 opacity-90">Your session has expired. Please sign in again to continue.</div>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/auth')}
-                    className="mt-4 rounded-xl bg-gold px-4 py-2 font-semibold text-navy"
-                  >
-                    Sign in again
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="mt-1 opacity-90">{error}</div>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/new')}
-                    className="mt-4 rounded-xl bg-gold px-4 py-2 font-semibold text-navy"
-                  >
-                    Back to form
-                  </button>
-                </>
+              key={i}
+              className={[
+                'flex items-center gap-4 rounded-2xl px-5 py-4 transition-all',
+                step.active ? 'bg-gold/15 ring-1 ring-gold/40' : 'bg-white/5',
+              ].join(' ')}
+            >
+              <div className={[
+                'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold',
+                step.done ? 'bg-green-500 text-white' : step.active ? 'bg-gold text-navy' : 'bg-white/10 text-cream/30',
+              ].join(' ')}>
+                {step.done ? '✓' : i + 1}
+              </div>
+              <div className={['font-semibold text-sm', step.active ? 'text-cream' : step.done ? 'text-cream/50' : 'text-cream/30'].join(' ')}>
+                {step.label}
+              </div>
+              {step.active && (
+                <div className="ml-auto flex gap-1">
+                  {[0, 1, 2].map((d) => (
+                    <div
+                      key={d}
+                      className="h-2 w-2 rounded-full bg-gold animate-bounce"
+                      style={{ animationDelay: `${d * 0.15}s` }}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-          ) : null}
+          ))}
         </div>
+
+        {/* Illustration progress bar (stage 2 only) */}
+        {stage === 2 && (
+          <div className="mt-6 rounded-2xl bg-white/5 p-5">
+            <div className="flex items-center justify-between text-sm text-cream/70 mb-3">
+              <span>Illustration {Math.min(doneCount + 1, totalCount)} of {totalCount}</span>
+              <span className="font-semibold text-gold">{percent}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-white/10">
+              <div
+                className="h-2 rounded-full bg-gold transition-all duration-500"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {error ? (
+          <div className="mt-6 rounded-2xl bg-red-500/20 p-5 text-sm">
+            <div className="font-semibold">Oops — generation failed</div>
+            {error.includes('401') || error.includes('Invalid JWT') ? (
+              <>
+                <div className="mt-1 opacity-90">Your session has expired. Please sign in again to continue.</div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/auth')}
+                  className="mt-4 rounded-xl bg-gold px-4 py-2 font-semibold text-navy"
+                >
+                  Sign in again
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="mt-1 opacity-90">{error}</div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/new')}
+                  className="mt-4 rounded-xl bg-gold px-4 py-2 font-semibold text-navy"
+                >
+                  Back to form
+                </button>
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   )
