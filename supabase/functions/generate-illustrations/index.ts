@@ -34,12 +34,14 @@ function userIdFromAuthHeader(req: Request) {
 }
 
 function buildImagePrompt(theme: string, childName: string, paragraph: string) {
-  const scene = firstSentence(paragraph).slice(0, 120)
+  // Strip non-ASCII characters so Chinese text doesn't appear in the DALL-E prompt.
+  const scene = firstSentence(paragraph).replace(/[^\x00-\x7F]/g, '').trim().slice(0, 120)
+  const sceneClause = scene.length > 10 ? `Scene: ${scene} ` : ''
   return (
     `A gentle, child-safe, G-rated children's storybook illustration for a young child. ` +
     `Warm soft watercolor painting style. ${theme} theme. ` +
     `The main character is a young child named ${childName}. ` +
-    `Scene: ${scene} ` +
+    sceneClause +
     `Whimsical, dreamy, cozy, safe, age-appropriate bedtime storybook art. ` +
     `No violence, no scary elements, no adult content. ` +
     `No text, no words, no letters, no captions anywhere in the image.`
