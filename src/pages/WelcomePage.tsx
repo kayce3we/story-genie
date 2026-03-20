@@ -1,6 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 
+const FLOATING = ['⭐', '🌙', '✨', '🌟', '💫', '🪄']
+
 // This screen greets the user after login and gives them two quick actions.
 export function WelcomePage() {
   const { user, signOut } = useAuth()
@@ -11,35 +13,69 @@ export function WelcomePage() {
     navigate('/')
   }
 
-  return (
-    <div className="min-h-screen bg-navy pb-20 pt-16 text-cream">
-      <div className="mx-auto max-w-md px-6 py-20 text-center">
-        <div className="font-heading text-4xl font-bold">Story Genie</div>
-        <div className="mt-3 text-cream/60">
-          {user?.email ? `Welcome back, ${user.email}` : 'Welcome back!'}
-        </div>
+  const firstName = user?.email?.split('@')[0] ?? 'there'
 
-        <div className="mt-14 flex flex-col gap-4">
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-navy pb-20 pt-16 text-cream">
+
+      {/* Floating background decorations */}
+      {FLOATING.map((emoji, i) => (
+        <div
+          key={i}
+          className="pointer-events-none absolute select-none animate-bounce opacity-20"
+          style={{
+            top: `${10 + (i * 14) % 70}%`,
+            left: `${5 + (i * 17) % 85}%`,
+            fontSize: `${1.2 + (i % 3) * 0.4}rem`,
+            animationDelay: `${i * 0.4}s`,
+            animationDuration: `${2.5 + (i % 3) * 0.8}s`,
+          }}
+        >
+          {emoji}
+        </div>
+      ))}
+
+      <div className="relative mx-auto max-w-md px-6 pt-10 text-center">
+
+        {/* Hero lamp */}
+        <div className="text-8xl drop-shadow-lg">🪔</div>
+        <h1 className="mt-4 font-heading text-4xl font-bold text-gold">Story Genie</h1>
+        <p className="mt-2 text-cream/60">
+          Hey {firstName}! Ready to create magic?
+        </p>
+
+        {/* Divider */}
+        <div className="mx-auto mt-8 h-px w-16 bg-white/10" />
+
+        {/* Actions */}
+        <div className="mt-8 flex flex-col gap-4">
           <Link
             to="/new"
-            className="rounded-2xl bg-gold px-6 py-5 font-heading text-xl font-bold text-navy hover:opacity-90"
+            className="group relative overflow-hidden rounded-2xl bg-gold px-6 py-5 font-heading text-xl font-bold text-navy shadow-lg transition hover:opacity-95 active:scale-95"
           >
-            ✨ Create a New Story
+            <span className="relative z-10">✨ Create a New Story</span>
           </Link>
+
           <Link
             to="/saved"
-            className="rounded-2xl border border-white/20 px-6 py-5 font-heading text-xl font-semibold text-cream hover:bg-white/5"
+            className="rounded-2xl border border-white/20 bg-white/5 px-6 py-5 font-heading text-xl font-semibold text-cream transition hover:bg-white/10 active:scale-95"
           >
-            📚 Saved Stories
+            📚 My Story Library
           </Link>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="mt-4 text-sm text-cream/40 hover:text-cream/70"
-          >
-            Sign out
-          </button>
         </div>
+
+        {/* Fun tagline */}
+        <p className="mt-10 text-xs text-cream/30 italic">
+          "Every child deserves a story made just for them."
+        </p>
+
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="mt-6 text-xs text-cream/30 hover:text-cream/60"
+        >
+          Sign out
+        </button>
       </div>
     </div>
   )
