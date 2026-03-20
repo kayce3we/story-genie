@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { callEdgeFunction } from '../lib/edgeFunctions'
 import { createStory, saveStoryPages } from '../lib/db'
-import type { StoryLanguage, StoryLength, ThemeKey, StoryPage } from '../types/story'
+import type { NarrativeVoice, StoryLanguage, StoryLength, ThemeKey, StoryPage } from '../types/story'
 
 type LoadingState = {
   childName: string
@@ -11,7 +11,22 @@ type LoadingState = {
   theme: ThemeKey
   length: StoryLength
   language: StoryLanguage
-  photoFile: File | null
+  voice: NarrativeVoice
+  photoFiles: File[]
+}
+
+type PhotoData = { data: string; mediaType: string }
+
+function fileToBase64(file: File): Promise<PhotoData> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      resolve({ data: result.split(',')[1], mediaType: file.type || 'image/jpeg' })
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 type GenerateStoryResponse = { storyText: string }
@@ -58,6 +73,8 @@ export function LoadingPage() {
         setError(null)
         setStage(1)
 
+        const photos: PhotoData[] = await Promise.all((i.photoFiles ?? []).map(fileToBase64))
+
         const storyRes = await callEdgeFunction<GenerateStoryResponse>('generate-story', {
           name: i.childName,
           age: i.childAge,
@@ -65,6 +82,8 @@ export function LoadingPage() {
           theme: i.theme,
           length: i.length,
           language: i.language ?? 'English',
+          voice: i.voice ?? 'Classic',
+          photos,
         })
 
         const paragraphs = splitParagraphs(storyRes.storyText)
@@ -89,7 +108,7 @@ export function LoadingPage() {
           imageUrl: illRes.imageUrls[idx],
         }))
 
-        const title = `${i.childName}’s ${i.theme} Story`
+        const title = `${i.childName}'s ${i.theme} Story`
         const storyId = await createStory({
           childName: i.childName,
           childAge: i.childAge,
@@ -97,6 +116,7 @@ export function LoadingPage() {
           theme: i.theme,
           storyLength: i.length,
           title,
+          narrativeVoice: i.voice ?? 'Classic',
         })
 
         await saveStoryPages(storyId, pages)

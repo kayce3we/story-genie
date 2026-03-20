@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import type { StoryLength, ThemeKey, StoryPage } from '../types/story'
+import type { NarrativeVoice, StoryLength, ThemeKey, StoryPage } from '../types/story'
 
 type NewStoryInput = {
   childName: string
@@ -8,6 +8,7 @@ type NewStoryInput = {
   theme: ThemeKey
   storyLength: StoryLength
   title: string
+  narrativeVoice: NarrativeVoice
 }
 
 // This function creates a story row and returns its new id.
@@ -25,6 +26,7 @@ export async function createStory(input: NewStoryInput): Promise<string> {
       theme: input.theme,
       story_length: input.storyLength,
       title: input.title,
+      narrative_voice: input.narrativeVoice,
     })
     .select('id')
     .single()
@@ -63,6 +65,18 @@ export async function loadStoryPages(storyId: string): Promise<StoryPage[]> {
   }))
 }
 
+// This function loads metadata (voice, language, etc.) for one story.
+export async function loadStoryMeta(storyId: string): Promise<{ narrativeVoice: NarrativeVoice }> {
+  const { data, error } = await supabase
+    .from('stories')
+    .select('narrative_voice')
+    .eq('id', storyId)
+    .single()
+
+  if (error) throw new Error(error.message)
+  return { narrativeVoice: (data.narrative_voice as NarrativeVoice) ?? 'Classic' }
+}
+
 // This function renames a story for the current parent.
 export async function renameStory(storyId: string, title: string) {
   const { data: { user } } = await supabase.auth.getUser()
@@ -71,6 +85,22 @@ export async function renameStory(storyId: string, title: string) {
   const { error } = await supabase
     .from('stories')
     .update({ title })
+    .eq('id', storyId)
+    .eq('parent_id', user.id)
+
+  if (error) throw new Error(error.message)
+}
+
+// This function deletes a story and its pages for the current parent.
+export async function deleteStory(storyId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('You must be logged in.')
+
+  await supabase.from('story_pages').delete().eq('story_id', storyId)
+
+  const { error } = await supabase
+    .from('stories')
+    .delete()
     .eq('id', storyId)
     .eq('parent_id', user.id)
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { THEMES, type StoryLanguage, type StoryLength, type ThemeKey } from '../types/story'
+import { THEMES, VOICES, type NarrativeVoice, type StoryLanguage, type StoryLength, type ThemeKey } from '../types/story'
 
 type StoryInputState = {
   childName: string
@@ -9,7 +9,8 @@ type StoryInputState = {
   theme: ThemeKey
   length: StoryLength
   language: StoryLanguage
-  photoFile: File | null
+  voice: NarrativeVoice
+  photoFiles: File[]
 }
 
 // This screen collects the details needed to generate a story.
@@ -22,7 +23,8 @@ export function StoryInputPage() {
   const [theme, setTheme] = useState<ThemeKey>('Magical')
   const [length, setLength] = useState<StoryLength>('Medium')
   const [language, setLanguage] = useState<StoryLanguage>('English')
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [voice, setVoice] = useState<NarrativeVoice>('Classic')
+  const [photoFiles, setPhotoFiles] = useState<File[]>([])
 
   const canSubmit = useMemo(() => {
     return childName.trim().length > 0 && events.trim().length > 10 && childAge >= 2 && childAge <= 10
@@ -30,7 +32,7 @@ export function StoryInputPage() {
 
   // This function moves us to the loading screen with the form data.
   function onGrantStory() {
-    const state: StoryInputState = { childName, childAge, events, theme, length, language, photoFile }
+    const state: StoryInputState = { childName, childAge, events, theme, length, language, voice, photoFiles }
     navigate('/loading', { state })
   }
 
@@ -138,15 +140,43 @@ export function StoryInputPage() {
             </div>
           </div>
 
+          <div>
+            <div className="mb-2 text-sm text-cream/80">Narrative voice</div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {VOICES.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  onClick={() => setVoice(v.key)}
+                  className={[
+                    'rounded-xl px-3 py-3 text-left ring-1 transition',
+                    voice === v.key
+                      ? 'bg-gold text-navy ring-gold'
+                      : 'bg-white/5 text-cream ring-white/10 hover:bg-white/10',
+                  ].join(' ')}
+                >
+                  <div className="text-lg">{v.emoji}</div>
+                  <div className="mt-1 font-semibold text-sm">{v.key}</div>
+                  <div className={['text-xs mt-0.5', voice === v.key ? 'text-navy/70' : 'text-cream/50'].join(' ')}>
+                    {v.description}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <label className="block">
-            <div className="mb-2 text-sm text-cream/80">Optional photo upload (1 image)</div>
+            <div className="mb-2 text-sm text-cream/80">Optional photos (we'll weave them into the story)</div>
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+              multiple
+              onChange={(e) => setPhotoFiles(Array.from(e.target.files ?? []))}
               className="block w-full text-sm text-cream/80 file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-4 file:py-2 file:font-semibold file:text-cream hover:file:bg-white/15"
             />
-            {photoFile ? <div className="mt-2 text-xs text-cream/70">{photoFile.name}</div> : null}
+            {photoFiles.length > 0 ? (
+              <div className="mt-2 text-xs text-cream/70">{photoFiles.map((f) => f.name).join(', ')}</div>
+            ) : null}
           </label>
 
           <button

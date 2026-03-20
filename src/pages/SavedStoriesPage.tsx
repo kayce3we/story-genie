@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { loadSavedStories, renameStory } from '../lib/db'
+import { deleteStory, loadSavedStories, renameStory } from '../lib/db'
 import { THEMES, type ThemeKey } from '../types/story'
 
 type StoryCard = {
@@ -77,6 +77,13 @@ export function SavedStoriesPage() {
     setRenamingId(null)
   }
 
+  async function handleDelete(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!window.confirm('Delete this story? This cannot be undone.')) return
+    await deleteStory(id)
+    setCards((prev) => prev.filter((c) => c.id !== id))
+  }
+
   return (
     <div className="min-h-screen bg-navy text-cream">
       <div className="mx-auto max-w-5xl px-6 py-14">
@@ -142,7 +149,18 @@ export function SavedStoriesPage() {
                       </button>
                     </div>
                   )}
-                  <div className="text-lg">{themeEmoji(c.theme)}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-lg">{themeEmoji(c.theme)}</div>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => handleDelete(c.id, e)}
+                      className="text-cream/30 hover:text-red-400"
+                      title="Delete story"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-1 text-sm text-cream/70">
                   {new Date(c.createdAt).toLocaleDateString()}

@@ -17,6 +17,7 @@ create table if not exists public.stories (
   theme text not null,
   story_length text not null,
   title text not null,
+  narrative_voice text not null default 'Classic',
   created_at timestamptz not null default now()
 );
 

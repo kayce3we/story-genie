@@ -19,9 +19,9 @@ export function AuthPage() {
 
   const title = useMemo(() => (mode === 'signup' ? 'Create your account' : 'Welcome back'), [mode])
 
-  // If already logged in, go straight to the story input page.
+  // If already logged in, go to the welcome page.
   useEffect(() => {
-    if (user) navigate('/new', { replace: true })
+    if (user) navigate('/welcome', { replace: true })
   }, [user, navigate])
 
   // This function submits the form to Supabase Auth.
@@ -40,7 +40,7 @@ export function AuthPage() {
       return
     }
 
-    navigate('/new')
+    navigate('/welcome')
   }
 
   return (

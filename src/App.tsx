@@ -6,6 +6,7 @@ import { LoadingPage } from './pages/LoadingPage'
 import { SavedStoriesPage } from './pages/SavedStoriesPage'
 import { StoryInputPage } from './pages/StoryInputPage'
 import { StorybookPage } from './pages/StorybookPage'
+import { WelcomePage } from './pages/WelcomePage'
 
 // This is the "map" of all screens (routes) in our app.
 export default function App() {
@@ -13,6 +14,15 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/auth" element={<AuthPage />} />
+
+      <Route
+        path="/welcome"
+        element={
+          <RequireAuth>
+            <WelcomePage />
+          </RequireAuth>
+        }
+      />
 
       <Route
         path="/new"
