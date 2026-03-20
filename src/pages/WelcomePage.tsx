@@ -12,7 +12,7 @@ export function WelcomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-navy pb-20 text-cream">
+    <div className="min-h-screen bg-navy pb-20 pt-16 text-cream">
       <div className="mx-auto max-w-md px-6 py-20 text-center">
         <div className="font-heading text-4xl font-bold">Story Genie</div>
         <div className="mt-3 text-cream/60">

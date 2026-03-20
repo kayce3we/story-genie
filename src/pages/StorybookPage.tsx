@@ -13,6 +13,7 @@ export function StorybookPage() {
   const [pageIndex, setPageIndex] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [narrativeVoice, setNarrativeVoice] = useState<NarrativeVoice>('Classic')
+  const [title, setTitle] = useState<string>('')
   const [readAloudState, setReadAloudState] = useState<'idle' | 'loading' | 'playing'>('idle')
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -40,6 +41,7 @@ export function StorybookPage() {
         const [p, meta] = await Promise.all([loadStoryPages(storyId), loadStoryMeta(storyId)])
         setPages(p)
         setNarrativeVoice(meta.narrativeVoice)
+        setTitle(meta.title)
         setPageIndex(0)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load story.')
@@ -79,11 +81,18 @@ export function StorybookPage() {
       await audio.play().catch(() => {})
 
       const isChinese = /[\u4e00-\u9fff]/.test(current.paragraph)
-      const { audioContent } = await callEdgeFunction<{ audioContent: string }>('text-to-speech', {
+      const ttsPromise = callEdgeFunction<{ audioContent: string }>('text-to-speech', {
         text: current.paragraph,
         voice: narrativeVoice,
         isChinese,
       })
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out')), 20000)
+      )
+      const { audioContent } = await Promise.race([ttsPromise, timeoutPromise])
+
+      // If the user navigated away while fetching, abort.
+      if (audioRef.current !== audio) { setReadAloudState('idle'); return }
 
       // Convert base64 to a Blob URL — more reliable than a data URI on iOS.
       const bytes = Uint8Array.from(atob(audioContent), c => c.charCodeAt(0))
@@ -94,7 +103,8 @@ export function StorybookPage() {
       audio.src = url
       audio.onended = () => { URL.revokeObjectURL(url); setReadAloudState('idle') }
       audio.onerror = () => { URL.revokeObjectURL(url); setReadAloudState('idle') }
-      await audio.play()
+      // Don't await play() — on iOS it hangs waiting for a user gesture and blocks the state update.
+      audio.play().catch(() => { URL.revokeObjectURL(url); setReadAloudState('idle') })
       setReadAloudState('playing')
     } catch {
       setReadAloudState('idle')
@@ -102,10 +112,10 @@ export function StorybookPage() {
   }
 
   return (
-    <div className="min-h-screen bg-navy pb-20 text-cream">
+    <div className="min-h-screen bg-navy pb-20 pt-16 text-cream">
       <div className="mx-auto max-w-4xl px-6 py-14">
         <div className="flex items-center justify-between gap-4">
-          <h1 className="font-heading text-3xl font-bold">Storybook</h1>
+          <h1 className="font-heading text-3xl font-bold">{title || 'My Story'}</h1>
           <Link to="/saved" className="rounded-xl border border-white/15 px-4 py-2 text-sm">
             Saved Stories
           </Link>

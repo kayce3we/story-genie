@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { RequireAuth } from './auth/RequireAuth'
+import { Header } from './components/Header'
 import { NavBar } from './components/NavBar'
 import { AuthPage } from './pages/AuthPage'
 import { LandingPage } from './pages/LandingPage'
@@ -72,6 +73,7 @@ export default function App() {
 
       {showNav && (
         <RequireAuth>
+          <Header />
           <NavBar />
         </RequireAuth>
       )}

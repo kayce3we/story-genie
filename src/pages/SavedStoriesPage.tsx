@@ -85,7 +85,7 @@ export function SavedStoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-navy pb-20 text-cream">
+    <div className="min-h-screen bg-navy pb-20 pt-16 text-cream">
       <div className="mx-auto max-w-5xl px-6 py-14">
         <div className="flex items-center justify-between gap-4">
           <h1 className="font-heading text-3xl font-bold">Saved Stories</h1>

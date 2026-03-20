@@ -52,7 +52,7 @@ export function StoryInputPage() {
   }
 
   return (
-    <div className="min-h-screen bg-navy pb-20 text-cream">
+    <div className="min-h-screen bg-navy pb-20 pt-16 text-cream">
       <div className="mx-auto max-w-3xl px-6 py-14">
         <h1 className="font-heading text-3xl font-bold">Create a new story</h1>
 

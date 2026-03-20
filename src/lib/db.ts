@@ -66,15 +66,18 @@ export async function loadStoryPages(storyId: string): Promise<StoryPage[]> {
 }
 
 // This function loads metadata (voice, language, etc.) for one story.
-export async function loadStoryMeta(storyId: string): Promise<{ narrativeVoice: NarrativeVoice }> {
+export async function loadStoryMeta(storyId: string): Promise<{ narrativeVoice: NarrativeVoice; title: string }> {
   const { data, error } = await supabase
     .from('stories')
-    .select('narrative_voice')
+    .select('narrative_voice, title')
     .eq('id', storyId)
     .single()
 
   if (error) throw new Error(error.message)
-  return { narrativeVoice: (data.narrative_voice as NarrativeVoice) ?? 'Classic' }
+  return {
+    narrativeVoice: (data.narrative_voice as NarrativeVoice) ?? 'Classic',
+    title: (data.title as string) ?? 'My Story',
+  }
 }
 
 // This function renames a story for the current parent.
