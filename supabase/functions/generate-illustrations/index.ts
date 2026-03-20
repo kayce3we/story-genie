@@ -38,7 +38,8 @@ function buildImagePrompt(theme: string, paragraph: string) {
   return (
     `Children's storybook illustration in a warm, soft watercolor style. ` +
     `${theme} theme. Scene: ${scene} ` +
-    `Child-friendly, dreamy, cozy bedtime storybook aesthetic. No text in image.`
+    `Child-friendly, dreamy, cozy bedtime storybook aesthetic. ` +
+    `No text, no words, no letters, no captions, no labels, no signs with writing anywhere in the image.`
   )
 }
 
