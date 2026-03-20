@@ -33,13 +33,16 @@ function userIdFromAuthHeader(req: Request) {
   }
 }
 
-function buildImagePrompt(theme: string, paragraph: string) {
-  const scene = firstSentence(paragraph)
+function buildImagePrompt(theme: string, childName: string, paragraph: string) {
+  const scene = firstSentence(paragraph).slice(0, 120)
   return (
-    `Children's storybook illustration in a warm, soft watercolor style. ` +
-    `${theme} theme. Scene: ${scene} ` +
-    `Child-friendly, dreamy, cozy bedtime storybook aesthetic. ` +
-    `No text, no words, no letters, no captions, no labels, no signs with writing anywhere in the image.`
+    `A gentle, child-safe, G-rated children's storybook illustration for a young child. ` +
+    `Warm soft watercolor painting style. ${theme} theme. ` +
+    `The main character is a young child named ${childName}. ` +
+    `Scene: ${scene} ` +
+    `Whimsical, dreamy, cozy, safe, age-appropriate bedtime storybook art. ` +
+    `No violence, no scary elements, no adult content. ` +
+    `No text, no words, no letters, no captions anywhere in the image.`
   )
 }
 
@@ -77,7 +80,7 @@ Deno.serve(async (req) => {
     const userId = userIdFromAuthHeader(req) ?? 'anonymous'
 
     async function generateOne(paragraph: string, index: number) {
-      const prompt = buildImagePrompt(input.theme, paragraph)
+      const prompt = buildImagePrompt(input.theme, input.childName, paragraph)
 
       const imgRes = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
