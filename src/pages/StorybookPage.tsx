@@ -15,7 +15,8 @@ export function StorybookPage() {
   const [narrativeVoice, setNarrativeVoice] = useState<NarrativeVoice>('Classic')
   const [title, setTitle] = useState<string>('')
   const [readAloudState, setReadAloudState] = useState<'idle' | 'loading' | 'playing'>('idle')
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null)
 
   const current = pages[pageIndex]
 
@@ -53,10 +54,10 @@ export function StorybookPage() {
 
   // Stop any currently playing audio.
   function stopAudio() {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current = null
-    }
+    try { audioSourceRef.current?.stop() } catch {}
+    audioSourceRef.current = null
+    audioCtxRef.current?.close().catch(() => {})
+    audioCtxRef.current = null
     setReadAloudState('idle')
   }
 
@@ -70,15 +71,14 @@ export function StorybookPage() {
       return
     }
 
+    // Create and resume AudioContext synchronously within the user gesture.
+    // Web Audio API stays unlocked on iOS even after async operations, unlike HTMLAudioElement.
+    const ctx = new AudioContext()
+    audioCtxRef.current = ctx
+    ctx.resume() // Called synchronously — iOS registers the gesture here.
+
     try {
       setReadAloudState('loading')
-
-      // iOS requires audio.play() synchronously within a user gesture.
-      // A tiny silent WAV is used to unlock the audio element before the async fetch.
-      const audio = new Audio()
-      audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'
-      audioRef.current = audio
-      await audio.play().catch(() => {})
 
       const isChinese = /[\u4e00-\u9fff]/.test(current.paragraph)
       const ttsPromise = callEdgeFunction<{ audioContent: string }>('text-to-speech', {
@@ -92,21 +92,30 @@ export function StorybookPage() {
       const { audioContent } = await Promise.race([ttsPromise, timeoutPromise])
 
       // If the user navigated away while fetching, abort.
-      if (audioRef.current !== audio) { setReadAloudState('idle'); return }
+      if (audioCtxRef.current !== ctx) { ctx.close(); return }
 
-      // Convert base64 to a Blob URL — more reliable than a data URI on iOS.
       const bytes = Uint8Array.from(atob(audioContent), c => c.charCodeAt(0))
-      const blob = new Blob([bytes], { type: 'audio/mpeg' })
-      const url = URL.createObjectURL(blob)
+      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0))
 
-      audio.pause()
-      audio.src = url
-      audio.onended = () => { URL.revokeObjectURL(url); setReadAloudState('idle') }
-      audio.onerror = () => { URL.revokeObjectURL(url); setReadAloudState('idle') }
-      // Don't await play() — on iOS it hangs waiting for a user gesture and blocks the state update.
-      audio.play().catch(() => { URL.revokeObjectURL(url); setReadAloudState('idle') })
+      if (audioCtxRef.current !== ctx) { ctx.close(); return }
+
+      const source = ctx.createBufferSource()
+      source.buffer = audioBuffer
+      source.connect(ctx.destination)
+      audioSourceRef.current = source
+      source.onended = () => {
+        audioCtxRef.current = null
+        audioSourceRef.current = null
+        ctx.close().catch(() => {})
+        setReadAloudState('idle')
+      }
+      source.start(0)
       setReadAloudState('playing')
     } catch {
+      if (audioCtxRef.current === ctx) {
+        audioCtxRef.current = null
+        ctx.close().catch(() => {})
+      }
       setReadAloudState('idle')
     }
   }
