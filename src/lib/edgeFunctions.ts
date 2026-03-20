@@ -9,7 +9,14 @@ export async function callEdgeFunction<TResponse>(
   name: EdgeFunctionName,
   body: unknown,
 ): Promise<TResponse> {
-  const { data, error } = await supabase.functions.invoke<TResponse>(name, { body: body as Record<string, unknown> })
+  const { data: { session } } = await supabase.auth.getSession()
+  const headers: Record<string, string> = {}
+  if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
+
+  const { data, error } = await supabase.functions.invoke<TResponse>(name, {
+    body: body as Record<string, unknown>,
+    headers,
+  })
 
   if (error) {
     // Try to extract the actual error body from the response
