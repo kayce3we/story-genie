@@ -71,11 +71,12 @@ export function StorybookPage() {
     try {
       setReadAloudState('loading')
 
-      // iOS requires audio.play() to be called synchronously within a user gesture.
-      // We create the element and unlock it immediately, then load the real audio after the fetch.
+      // iOS requires audio.play() synchronously within a user gesture.
+      // A tiny silent WAV is used to unlock the audio element before the async fetch.
       const audio = new Audio()
+      audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'
       audioRef.current = audio
-      const unlockPromise = audio.play().catch(() => {})
+      await audio.play().catch(() => {})
 
       const isChinese = /[\u4e00-\u9fff]/.test(current.paragraph)
       const { audioContent } = await callEdgeFunction<{ audioContent: string }>('text-to-speech', {
@@ -84,11 +85,15 @@ export function StorybookPage() {
         isChinese,
       })
 
-      await unlockPromise
+      // Convert base64 to a Blob URL — more reliable than a data URI on iOS.
+      const bytes = Uint8Array.from(atob(audioContent), c => c.charCodeAt(0))
+      const blob = new Blob([bytes], { type: 'audio/mpeg' })
+      const url = URL.createObjectURL(blob)
+
       audio.pause()
-      audio.src = `data:audio/mp3;base64,${audioContent}`
-      audio.onended = () => setReadAloudState('idle')
-      audio.onerror = () => setReadAloudState('idle')
+      audio.src = url
+      audio.onended = () => { URL.revokeObjectURL(url); setReadAloudState('idle') }
+      audio.onerror = () => { URL.revokeObjectURL(url); setReadAloudState('idle') }
       await audio.play()
       setReadAloudState('playing')
     } catch {
