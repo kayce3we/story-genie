@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { loadStoryPages } from '../lib/db'
-import type { StoryPage } from '../types/story'
+import { loadStoryMeta, loadStoryPages } from '../lib/db'
+import { callEdgeFunction } from '../lib/edgeFunctions'
+import type { NarrativeVoice, StoryPage } from '../types/story'
 
 // This screen renders the story as a simple "storybook" with page flipping.
 export function StorybookPage() {
@@ -11,8 +12,14 @@ export function StorybookPage() {
   const [pages, setPages] = useState<StoryPage[]>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [narrativeVoice, setNarrativeVoice] = useState<NarrativeVoice>('Classic')
+  const [readAloudState, setReadAloudState] = useState<'idle' | 'loading' | 'playing'>('idle')
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const current = pages[pageIndex]
+
+  // Stop audio whenever the page changes.
+  useEffect(() => { stopAudio() }, [pageIndex]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const pageLabel = useMemo(() => {
     if (pages.length === 0) return 'Page 0 of 0'
@@ -30,8 +37,9 @@ export function StorybookPage() {
     async function load() {
       try {
         setError(null)
-        const p = await loadStoryPages(storyId)
+        const [p, meta] = await Promise.all([loadStoryPages(storyId), loadStoryMeta(storyId)])
         setPages(p)
+        setNarrativeVoice(meta.narrativeVoice)
         setPageIndex(0)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load story.')
@@ -41,15 +49,51 @@ export function StorybookPage() {
     load()
   }, [id])
 
-  // This function reads the current page aloud using the Web Speech API.
-  function readAloud() {
-    if (!current?.paragraph) return
-    if (!('speechSynthesis' in window)) return
+  // Stop any currently playing audio.
+  function stopAudio() {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+    setReadAloudState('idle')
+  }
 
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(current.paragraph)
-    utterance.rate = 0.95
-    window.speechSynthesis.speak(utterance)
+  // This function reads the current page aloud using Google Cloud TTS Neural2.
+  async function readAloud() {
+    if (!current?.paragraph) return
+
+    // If already playing, stop.
+    if (readAloudState !== 'idle') {
+      stopAudio()
+      return
+    }
+
+    try {
+      setReadAloudState('loading')
+
+      // iOS requires audio.play() to be called synchronously within a user gesture.
+      // We create the element and unlock it immediately, then load the real audio after the fetch.
+      const audio = new Audio()
+      audioRef.current = audio
+      const unlockPromise = audio.play().catch(() => {})
+
+      const isChinese = /[\u4e00-\u9fff]/.test(current.paragraph)
+      const { audioContent } = await callEdgeFunction<{ audioContent: string }>('text-to-speech', {
+        text: current.paragraph,
+        voice: narrativeVoice,
+        isChinese,
+      })
+
+      await unlockPromise
+      audio.pause()
+      audio.src = `data:audio/mp3;base64,${audioContent}`
+      audio.onended = () => setReadAloudState('idle')
+      audio.onerror = () => setReadAloudState('idle')
+      await audio.play()
+      setReadAloudState('playing')
+    } catch {
+      setReadAloudState('idle')
+    }
   }
 
   return (
@@ -81,7 +125,7 @@ export function StorybookPage() {
             <img
               src={current.imageUrl}
               alt="Story illustration"
-              className="h-72 w-full rounded-2xl object-cover sm:h-96"
+              className="w-full rounded-2xl object-contain"
             />
 
             <div className="mt-6 text-lg leading-relaxed">{current.paragraph}</div>
@@ -109,9 +153,10 @@ export function StorybookPage() {
                 <button
                   type="button"
                   onClick={readAloud}
-                  className="rounded-xl bg-navy px-4 py-2 font-semibold text-cream"
+                  disabled={readAloudState === 'loading'}
+                  className="rounded-xl bg-navy px-4 py-2 font-semibold text-cream disabled:opacity-60"
                 >
-                  Read Aloud
+                  {readAloudState === 'loading' ? 'Loading…' : readAloudState === 'playing' ? '⏹ Stop' : '🔊 Read Aloud'}
                 </button>
                 <Link
                   to="/new"
