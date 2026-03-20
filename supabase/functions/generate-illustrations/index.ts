@@ -81,22 +81,38 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey)
     const userId = userIdFromAuthHeader(req) ?? 'anonymous'
 
-    async function generateOne(paragraph: string, index: number) {
-      const prompt = buildImagePrompt(input.theme, input.childName, paragraph)
+    // Strip non-ASCII so Chinese names/text don't appear in the DALL-E prompt.
+    const safeChildName = input.childName.replace(/[^\x00-\x7F]/g, '').trim() || 'a child'
 
-      const imgRes = await fetch('https://api.openai.com/v1/images/generations', {
+    async function callDallE(prompt: string) {
+      const res = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'dall-e-3',
-          prompt,
-          size: '1024x1024',
-          quality: 'standard',
-        }),
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${openaiKey}` },
+        body: JSON.stringify({ model: 'dall-e-3', prompt, size: '1024x1024', quality: 'standard' }),
       })
+      return res
+    }
+
+    async function generateOne(paragraph: string, index: number) {
+      let prompt = buildImagePrompt(input.theme, safeChildName, paragraph)
+      let imgRes = await callDallE(prompt)
+
+      // Retry once with a stripped-down prompt if the safety system rejects it.
+      if (!imgRes.ok) {
+        const errText = await imgRes.text()
+        if (errText.includes('content_policy_violation')) {
+          prompt = (
+            `A gentle G-rated children's storybook watercolor illustration. ` +
+            `${input.theme} theme. A young child in a cozy magical scene. ` +
+            `Dreamy, soft, age-appropriate. No text, no words anywhere in the image.`
+          )
+          imgRes = await callDallE(prompt)
+        }
+        if (!imgRes.ok) {
+          const text2 = await imgRes.text()
+          throw new Error(`OpenAI image error: ${imgRes.status} ${text2}`)
+        }
+      }
 
       if (!imgRes.ok) {
         const text = await imgRes.text()
