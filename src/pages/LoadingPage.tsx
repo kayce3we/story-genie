@@ -160,14 +160,29 @@ export function LoadingPage() {
           {error ? (
             <div className="mt-5 rounded-xl bg-red-500/20 p-4 text-sm">
               <div className="font-semibold">Oops — generation failed</div>
-              <div className="mt-1 opacity-90">{error}</div>
-              <button
-                type="button"
-                onClick={() => navigate('/new')}
-                className="mt-4 rounded-xl bg-gold px-4 py-2 font-semibold text-navy"
-              >
-                Back to form
-              </button>
+              {error.includes('401') || error.includes('Invalid JWT') ? (
+                <>
+                  <div className="mt-1 opacity-90">Your session has expired. Please sign in again to continue.</div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/auth')}
+                    className="mt-4 rounded-xl bg-gold px-4 py-2 font-semibold text-navy"
+                  >
+                    Sign in again
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="mt-1 opacity-90">{error}</div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/new')}
+                    className="mt-4 rounded-xl bg-gold px-4 py-2 font-semibold text-navy"
+                  >
+                    Back to form
+                  </button>
+                </>
+              )}
             </div>
           ) : null}
         </div>
