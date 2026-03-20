@@ -94,8 +94,9 @@ export function StorybookPage() {
       // If the user navigated away while fetching, abort.
       if (audioCtxRef.current !== ctx) { ctx.close(); return }
 
-      const bytes = Uint8Array.from(atob(audioContent), c => c.charCodeAt(0))
-      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0))
+      const response = await fetch(`data:audio/mpeg;base64,${audioContent}`)
+      const arrayBuffer = await response.arrayBuffer()
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
 
       if (audioCtxRef.current !== ctx) { ctx.close(); return }
 
